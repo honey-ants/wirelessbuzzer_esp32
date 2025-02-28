@@ -1,4 +1,4 @@
-// SLAVE BUZZER (GREEN)
+// MASTER BUZZER (YELLOW)
 
 /*
 ESP32 Connections
@@ -19,6 +19,7 @@ ESP32 Connections
 #include <Audio.h>
 #include <SPIFFS.h>
 #include <WiFi.h>
+#include <WebServer.h>
 #include <esp_now.h>
 
 typedef struct struct_message {
@@ -26,12 +27,13 @@ typedef struct struct_message {
 } struct_message;
 struct_message outData;
 struct_message inData;
+
 esp_now_peer_info_t peerInfo;
 
 //MAC Addresses of Receivers, self is commented out
 uint8_t blue[] = {0xE4, 0xB0, 0x63, 0xB9, 0xDB, 0x98}; // Blue
-// uint8_t green[] = {0xE4, 0xB0, 0x63, 0xB9, 0xDA, 0x5C}; //  Green
-uint8_t yellow[] = {0xE4, 0xB0, 0x63, 0xB3, 0xF5, 0xDC}; //  Yellow
+uint8_t green[] = {0xE4, 0xB0, 0x63, 0xB9, 0xDA, 0x5C}; //  Green
+// uint8_t yellow[] = {0xE4, 0xB0, 0x63, 0xB3, 0xF5, 0xDC}; //  Yellow
 uint8_t red[] = {0xE4, 0xB0, 0x63, 0xB3, 0xFA, 0x24}; // Red
 uint8_t white1[] = {0xE4, 0xB0, 0x63, 0xB3, 0xA2, 0xBC}; // White1
 uint8_t white2[] = {0xE4, 0xB0, 0x63, 0xB9, 0xDB, 0x88}; // White2
@@ -48,6 +50,61 @@ bool someonePressed = false;
 #define I2C_BCLK 2
 #define I2C_LRC 1
 Audio audio;
+
+// Web Server Setup
+const char* ssid = "BuzzerReset";
+const char* password = "iceicebaby";
+WebServer server(80);
+const char index_html[] PROGMEM = R"rawliteral(
+  <!DOCTYPE HTML>
+  <html>
+
+    <head>
+      <title>
+        Buzzer Reset
+      </title>
+
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+
+      <style>
+        .button {
+          width: 75%;
+          padding: 15px 32px;
+        }
+        .reset {
+          background-color: #98f59c;
+        }
+      </style>
+
+      <script>
+        function resetPress() {
+          fetch('/reset-press')
+        }
+        function unlockPress() {
+          fetch('/unlock-press')
+        }
+      </script>
+    </head>
+
+    <body>
+      <br>
+      <br>
+      <p>
+        <button class="button" onclick="unlockPress()">
+          UNLOCK
+        </button>
+      </p>
+      <br>
+      <br>
+      <p>
+        <button class="button reset" onclick="resetPress()">
+          RESET
+        </button>
+      </p>
+    </body>
+
+  </html>
+)rawliteral";
 
 void onDataReceive (const uint8_t * mac, const uint8_t *incomingData, int len) {
   Serial.println("Message received!");
@@ -100,16 +157,16 @@ void registerPeers() {
     Serial.println("Failed to add Blue");
     return;
   }
-//   memcpy(peerInfo.peer_addr, green, 6);
-//   if (esp_now_add_peer(&peerInfo) != ESP_OK){
-//     Serial.println("Failed to add Green");
-//     return;
-//   }
-  memcpy(peerInfo.peer_addr, yellow, 6);
+  memcpy(peerInfo.peer_addr, green, 6);
   if (esp_now_add_peer(&peerInfo) != ESP_OK){
-    Serial.println("Failed to add Yellow");
+    Serial.println("Failed to add Green");
     return;
   }
+  // memcpy(peerInfo.peer_addr, yellow, 6);
+  // if (esp_now_add_peer(&peerInfo) != ESP_OK){
+  //   Serial.println("Failed to add Yellow");
+  //   return;
+  // }
   memcpy(peerInfo.peer_addr, red, 6);
   if (esp_now_add_peer(&peerInfo) != ESP_OK){
     Serial.println("Failed to add Red");
@@ -137,6 +194,37 @@ void sendMessage(char message) {
   }
 }
 
+void handleRoot () {
+  server.send(200, "text/html", index_html);
+}
+
+void handleUnlockPress () {
+  Serial.println("Unlock!");
+  audio.connecttoFS(SPIFFS, "/buzzer.wav");
+  sendMessage('u');
+  server.send(200, "text/plain", "Button press received");
+}
+
+void handleResetPress() {
+  Serial.println("Reset!");
+  audio.connecttoFS(SPIFFS, "/buzzer.wav");
+  sendMessage('r');
+  server.send(200, "text/plain", "Button press received");
+}
+
+void startWiFi() {
+  WiFi.softAP(ssid, password);
+  Serial.println(WiFi.localIP());
+}
+
+void startServer() {
+  server.on("/", handleRoot);
+  server.on("/unlock-press", handleUnlockPress);
+  server.on("/reset-press", handleResetPress);
+  server.begin();
+  Serial.println("Web server started.");
+}
+
 void startAudio() {
   if (!SPIFFS.begin(true)) {
     Serial.println("Failed to mount SPIFFS");
@@ -152,14 +240,17 @@ void setup() {
   pinMode(buttonPin, INPUT_PULLDOWN);
   pinMode(ledPin, OUTPUT);
 
-  WiFi.mode(WIFI_STA);
+  WiFi.mode(WIFI_AP_STA);
+  startWiFi();
   startESPNOW();
   registerPeers();
+  startServer();
   startAudio();
 }
 
 void loop() {
   audio.loop();
+  server.handleClient();
 
   if (!buttonLocked and !someonePressed) {
     buttonState = digitalRead(buttonPin);

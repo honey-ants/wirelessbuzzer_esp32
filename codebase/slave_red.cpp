@@ -1,4 +1,4 @@
-// SLAVE BUZZER (GREEN)
+// SLAVE BUZZER (RED)
 
 /*
 ESP32 Connections
@@ -30,9 +30,9 @@ esp_now_peer_info_t peerInfo;
 
 //MAC Addresses of Receivers, self is commented out
 uint8_t blue[] = {0xE4, 0xB0, 0x63, 0xB9, 0xDB, 0x98}; // Blue
-// uint8_t green[] = {0xE4, 0xB0, 0x63, 0xB9, 0xDA, 0x5C}; //  Green
+uint8_t green[] = {0xE4, 0xB0, 0x63, 0xB9, 0xDA, 0x5C}; //  Green
 uint8_t yellow[] = {0xE4, 0xB0, 0x63, 0xB3, 0xF5, 0xDC}; //  Yellow
-uint8_t red[] = {0xE4, 0xB0, 0x63, 0xB3, 0xFA, 0x24}; // Red
+// uint8_t red[] = {0xE4, 0xB0, 0x63, 0xB3, 0xFA, 0x24}; // Red
 uint8_t white1[] = {0xE4, 0xB0, 0x63, 0xB3, 0xA2, 0xBC}; // White1
 uint8_t white2[] = {0xE4, 0xB0, 0x63, 0xB9, 0xDB, 0x88}; // White2
 
@@ -100,21 +100,21 @@ void registerPeers() {
     Serial.println("Failed to add Blue");
     return;
   }
-//   memcpy(peerInfo.peer_addr, green, 6);
-//   if (esp_now_add_peer(&peerInfo) != ESP_OK){
-//     Serial.println("Failed to add Green");
-//     return;
-//   }
+  memcpy(peerInfo.peer_addr, green, 6);
+  if (esp_now_add_peer(&peerInfo) != ESP_OK){
+    Serial.println("Failed to add Green");
+    return;
+  }
   memcpy(peerInfo.peer_addr, yellow, 6);
   if (esp_now_add_peer(&peerInfo) != ESP_OK){
     Serial.println("Failed to add Yellow");
     return;
   }
-  memcpy(peerInfo.peer_addr, red, 6);
-  if (esp_now_add_peer(&peerInfo) != ESP_OK){
-    Serial.println("Failed to add Red");
-    return;
-  }
+//   memcpy(peerInfo.peer_addr, red, 6);
+//   if (esp_now_add_peer(&peerInfo) != ESP_OK){
+//     Serial.println("Failed to add Red");
+//     return;
+//   }
   memcpy(peerInfo.peer_addr, white1, 6);
   if (esp_now_add_peer(&peerInfo) != ESP_OK){
     Serial.println("Failed to add White1");

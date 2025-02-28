@@ -1,7 +1,7 @@
 #include <Arduino.h>
 
 const int buttonPin = 4;
-const int ledPin = 11;
+const int ledPin = 10;
 int buttonState;
 
 void setup() {
@@ -18,11 +18,11 @@ void loop() {
   if (buttonState == HIGH) {
     // turn LED on:
     digitalWrite(ledPin, HIGH);
-    Serial.println("Button is pressed.");
+    Serial.println(buttonState);
   } else {
     // turn LED off:
     digitalWrite(ledPin, LOW);
-    Serial.println("Button is not pressed.");
+    Serial.println(buttonState);
   }
   delay(100);
 }

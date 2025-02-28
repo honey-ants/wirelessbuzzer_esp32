@@ -22,7 +22,6 @@ void setup() {
     Serial.println("Failed to mount SPIFFS");
     return;
   }
-
   audio.setPinout(I2C_BCLK, I2C_LRC, I2C_DOUT);
   audio.setVolume(21);
 
