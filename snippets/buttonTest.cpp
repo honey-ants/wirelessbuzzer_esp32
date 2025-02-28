@@ -1,6 +1,6 @@
 #include <Arduino.h>
 
-const int buttonPin = 10;
+const int buttonPin = 4;
 const int ledPin = 11;
 int buttonState;
 
