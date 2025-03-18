@@ -41,9 +41,11 @@ uint8_t white2[] = {0xE4, 0xB0, 0x63, 0xB9, 0xDB, 0x88}; // White2
 // Button Setup
 const int buttonPin = 4;
 const int ledPin = 10;
-int buttonState;
+int prevButtonState;
+int currentButtonState;
 bool buttonLocked = false;
 bool someonePressed = false;
+bool audioIsPlaying = false;
 
 // Audio Setup
 #define I2C_DOUT 42
@@ -172,20 +174,21 @@ void registerPeers() {
     Serial.println("Failed to add Red");
     return;
   }
-  memcpy(peerInfo.peer_addr, white1, 6);
-  if (esp_now_add_peer(&peerInfo) != ESP_OK){
-    Serial.println("Failed to add White1");
-    return;
-  }
   memcpy(peerInfo.peer_addr, white2, 6);
   if (esp_now_add_peer(&peerInfo) != ESP_OK){
     Serial.println("Failed to add White2");
     return;
+    memcpy(peerInfo.peer_addr, white1, 6);
+  if (esp_now_add_peer(&peerInfo) != ESP_OK){
+    Serial.println("Failed to add White1");
+    return;
+  }
   }
 }
 
 void sendMessage(char message) {
   outData.x = message;
+  Serial.println(outData.x);
   esp_err_t result = esp_now_send(0, (uint8_t*) &outData, sizeof(outData));
   if (result == ESP_OK) {
     Serial.println("Message sent successfully");
@@ -200,15 +203,19 @@ void handleRoot () {
 
 void handleUnlockPress () {
   Serial.println("Unlock!");
-  audio.connecttoFS(SPIFFS, "/buzzer.wav");
   sendMessage('u');
+  buttonLocked = false;
+  someonePressed = false;
+  digitalWrite(ledPin, HIGH);
   server.send(200, "text/plain", "Button press received");
 }
 
 void handleResetPress() {
   Serial.println("Reset!");
-  audio.connecttoFS(SPIFFS, "/buzzer.wav");
   sendMessage('r');
+  someonePressed = false;
+  buttonLocked = true;
+  digitalWrite(ledPin, LOW);
   server.send(200, "text/plain", "Button press received");
 }
 
@@ -234,6 +241,13 @@ void startAudio() {
   audio.setVolume(21);
 }
 
+void playAudio() {
+  if (!audioIsPlaying) {
+    audio.connecttoFS(SPIFFS, "/buzzer.wav"); // Sound
+    audioIsPlaying = true;
+  }
+}
+
 void setup() {
   Serial.begin(115200);
 
@@ -251,16 +265,21 @@ void setup() {
 void loop() {
   audio.loop();
   server.handleClient();
+  
+  currentButtonState = digitalRead(buttonPin);
 
   if (!buttonLocked and !someonePressed) {
-    buttonState = digitalRead(buttonPin);
-    if (buttonState == HIGH) { // First one to press
+    if (prevButtonState == LOW && currentButtonState == HIGH) { // First one to press
       digitalWrite(ledPin, HIGH); // Lights on
-      audio.connecttoFS(SPIFFS, "/buzzer.wav"); // Sound
+      playAudio(); // Buzzer noise
       sendMessage('l');
-      delay(1500);
-    } else {
-      digitalWrite(ledPin, HIGH); //  Lights on
     }
   }
+
+  prevButtonState = digitalRead(buttonPin);
+}
+
+// Resets audio file
+void audio_eof_mp3(const char *info){
+  audioIsPlaying = false;
 }
