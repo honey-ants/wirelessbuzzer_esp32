@@ -1,18 +1,18 @@
 /*
-Speaker Test
-19 (Blue) --> SU (Shutdown, not essential)
-20 (Purple) --> GAIN (Affects the decibel gain)
-21 (Grey) --> DIN (Data In)
-47 (White) --> BCLK (Board Clock)
-48 (Black) --> LRC (Left/Right Clock)
+> MAX98357 Audio
+1 --> LRC (Left/Right Clock)
+2 --> BCLK (Board Clock)
+42 --> DIN (Data In)
+41 --> GAIN (Affects the decibel gain)
+40 --> SU (Shutdown, not essential)
 */
 #include "Arduino.h"
 #include "Audio.h"
 #include "SPIFFS.h"
 
-#define I2C_DOUT 21
-#define I2C_BCLK 47
-#define I2C_LRC 48
+#define I2C_DOUT 42
+#define I2C_BCLK 2
+#define I2C_LRC 1
 Audio audio;
 
 void setup() {
@@ -39,5 +39,5 @@ void loop() {
 
 void audio_eof_mp3(const char *info) {
   Serial.println("End of file reached. Restarting playback...");
-  audio.connecttoFS(SPIFFS, "/buzzer.wav"); // Restart playback
+  // audio.connecttoFS(SPIFFS, "/buzzer.wav"); // Restart playback
 }

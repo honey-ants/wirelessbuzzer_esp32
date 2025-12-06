@@ -35,7 +35,7 @@ uint8_t yellow[] = {0xE4, 0xB0, 0x63, 0xB3, 0xF5, 0xDC}; //  Yellow
 uint8_t red[] = {0xE4, 0xB0, 0x63, 0xB3, 0xFA, 0x24}; // Red
 uint8_t white1[] = {0xE4, 0xB0, 0x63, 0xB3, 0xA2, 0xBC}; // White1
 uint8_t white2[] = {0xE4, 0xB0, 0x63, 0xB9, 0xDB, 0x88}; // White2
-uint8_t fake[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+uint8_t fake[] = {0xE4, 0xB0, 0x63, 0xB9, 0xDB, 0x78};
 
 // Button Setup
 const int buttonPin = 4;
@@ -136,12 +136,21 @@ void registerPeers() {
 
 void sendMessage(char message) {
   outData.x = message;
-  esp_err_t result = esp_now_send(0, (uint8_t*) &outData, sizeof(outData));
-  if (result == ESP_OK) {
-    Serial.println("Message sent successfully");
-  } else {
-    Serial.println("Error sending message");
-  }
+  Serial.print("Sending message: ");
+  Serial.println(outData.x);
+  
+  // Send to each peer individually
+  esp_now_send(blue, (uint8_t*) &outData, sizeof(outData));
+  delay(10);
+  esp_now_send(white2, (uint8_t*) &outData, sizeof(outData));
+  delay(10);
+  esp_now_send(red, (uint8_t*) &outData, sizeof(outData));
+  delay(10);
+  esp_now_send(white1, (uint8_t*) &outData, sizeof(outData));
+  delay(10);
+  esp_now_send(yellow, (uint8_t*) &outData, sizeof(outData));
+  delay(10);
+  esp_now_send(fake, (uint8_t*) &outData, sizeof(outData));
 }
 
 void startAudio() {
