@@ -39,4 +39,4 @@ The "Unlock" and "Reset" buttons will operate as described above. When the first
 
 
 ## Contact
-If you trying to use this code and run into any problems, please feel free to contact me at anthony.sbudisuharto@gmail.com and I would be happy to help you out.
+If run into any problems while using this code, please feel free to contact me at anthony.sbudisuharto@gmail.com and I would be happy to help you out.
