@@ -1,5 +1,5 @@
 # ESP32 Wireless Quiz Buzzer
-/images/buzzer display.png
+![Buzzer Display](/images/buzzer%20display.png)
 
 
 ## Description
@@ -10,13 +10,10 @@ Each buzzer is designed to have an LED button and a speaker. All of them are con
 
 ## Hardware
 Each buzzer unit had the following components inside the enclosure:
-(Mandatory)
 - ESP32-S3-WROOM-1-N16R8 (https://github.com/vcc-gnd/YD-ESP32-S3)
 - 12V LED game button
 - MAX98357 amplifier + 3W speaker
 - Battery
-(Optional)
-- Power button
 
 Additional wiring information and port assignments can be found inside of the code files. I may add a wiring diagram in the future for reference.
 
@@ -36,7 +33,7 @@ The buzzers broadcasts messages to one another using the ESP-NOW protocol. When 
 
 The buzzers are designed to have one parent buzzer (yellow, in this case) which hosts the captive portal webpage and broadcasts the WiFi network "BuzzerReset". Accessing the captive portal or 192.168.4.1 will display the following page to be used by the host:
 
-/images/webpage.png
+![Webpage](/images/webpage.png)
 
 The "Unlock" and "Reset" buttons will operate as described above. When the first button has been pressed, the color and ID name of the buzzer will be displayed at the top of the page for easy reference for the hose.
 
