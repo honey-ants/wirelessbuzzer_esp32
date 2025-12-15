@@ -1,4 +1,4 @@
-// MASTER BUZZER (YELLOW)
+// CHILD BUZZER (WHITE2)
 
 /*
 ESP32 Connections
@@ -19,7 +19,6 @@ ESP32 Connections
 #include <Audio.h>
 #include <SPIFFS.h>
 #include <WiFi.h>
-#include <WebServer.h>
 #include <esp_now.h>
 
 typedef struct struct_message {
@@ -27,16 +26,15 @@ typedef struct struct_message {
 } struct_message;
 struct_message outData;
 struct_message inData;
-
 esp_now_peer_info_t peerInfo;
 
 //MAC Addresses of Receivers, self is commented out
 uint8_t blue[] = {0xE4, 0xB0, 0x63, 0xB9, 0xDB, 0x98}; // Blue
 uint8_t green[] = {0xE4, 0xB0, 0x63, 0xB9, 0xDA, 0x5C}; //  Green
-// uint8_t yellow[] = {0xE4, 0xB0, 0x63, 0xB3, 0xF5, 0xDC}; //  Yellow
+uint8_t yellow[] = {0xE4, 0xB0, 0x63, 0xB3, 0xF5, 0xDC}; //  Yellow
 uint8_t red[] = {0xE4, 0xB0, 0x63, 0xB3, 0xFA, 0x24}; // Red
 uint8_t white1[] = {0xE4, 0xB0, 0x63, 0xB3, 0xA2, 0xBC}; // White1
-uint8_t white2[] = {0xE4, 0xB0, 0x63, 0xB9, 0xDB, 0x88}; // White2
+// uint8_t white2[] = {0xE4, 0xB0, 0x63, 0xB9, 0xDB, 0x88}; // White2
 uint8_t fake[] = {0xE4, 0xB0, 0x63, 0xB9, 0xDB, 0x78};
 
 // Button Setup
@@ -47,96 +45,12 @@ int currentButtonState;
 bool buttonLocked = false;
 bool someonePressed = false;
 bool audioIsPlaying = false;
-String winnerColor = "";
 
 // Audio Setup
 #define I2C_DOUT 42
 #define I2C_BCLK 2
 #define I2C_LRC 1
 Audio audio;
-
-// Web Server Setup
-const char* ssid = "BuzzerReset";
-const char* password = "iceicebaby";
-WebServer server(80);
-const char index_html[] PROGMEM = R"rawliteral(
-  <!DOCTYPE HTML>
-  <html>
-
-    <head>
-      <title>
-        Buzzer Reset
-      </title>
-
-      <meta name="viewport" content="width=device-width, initial-scale=1">
-
-      <style>
-        .button {
-          width: 75%;
-          padding: 15px 32px;
-        }
-        .reset {
-          background-color: #98f59c;
-        }
-        .winner-display {
-          font-size: 24px;
-          font-weight: bold;
-          text-align: center;
-          padding: 20px;
-          margin: 20px;
-          border: 3px solid #333;
-          border-radius: 10px;
-        }
-      </style>
-
-      <script>
-        function resetPress() {
-          fetch('/reset-press')
-        }
-        function unlockPress() {
-          fetch('/unlock-press')
-        }
-        function updateWinner() {
-          fetch('/winner')
-            .then(response => response.text())
-            .then(data => {
-              var display = document.getElementById('winnerDisplay');
-              if (data && data !== 'None') {
-                display.textContent = 'Winner: ' + data.toUpperCase();
-                display.style.backgroundColor = data.toLowerCase();
-                display.style.color = (data === 'Yellow' || data === 'White1' || data === 'White2') ? '#000' : '#fff';
-              } else {
-                display.textContent = 'No winner yet';
-                display.style.backgroundColor = '#f0f0f0';
-                display.style.color = '#000';
-              }
-            });
-        }
-        setInterval(updateWinner, 200);
-        updateWinner();
-      </script>
-    </head>
-
-    <body>
-      <div id="winnerDisplay" class="winner-display">No winner yet</div>
-      <br>
-      <br>
-      <p>
-        <button class="button" onclick="unlockPress()">
-          UNLOCK
-        </button>
-      </p>
-      <br>
-      <br>
-      <p>
-        <button class="button reset" onclick="resetPress()">
-          RESET
-        </button>
-      </p>
-    </body>
-
-  </html>
-)rawliteral";
 
 void onDataReceive (const uint8_t * mac, const uint8_t *incomingData, int len) {
   Serial.println("Message received!");
@@ -148,22 +62,14 @@ void onDataReceive (const uint8_t * mac, const uint8_t *incomingData, int len) {
     someonePressed = true;
     buttonLocked = true;
     digitalWrite(ledPin, LOW);
-    // Determine winner color from MAC address
-    if (memcmp(mac, blue, 6) == 0) winnerColor = "Blue";
-    else if (memcmp(mac, green, 6) == 0) winnerColor = "Green";
-    else if (memcmp(mac, red, 6) == 0) winnerColor = "Red";
-    else if (memcmp(mac, white1, 6) == 0) winnerColor = "White1";
-    else if (memcmp(mac, white2, 6) == 0) winnerColor = "White2";
   } else if (msg == 'r') { // Reset, buttons inactive until unlocked
     someonePressed = false;
     buttonLocked = true;
     digitalWrite(ledPin, LOW);
-    winnerColor = "";
   } else if (msg == 'u') { //  Unlock, all buttons active
     buttonLocked = false;
     someonePressed = false;
     digitalWrite(ledPin, HIGH);
-    winnerColor = "";
   }
 }
 
@@ -202,21 +108,21 @@ void registerPeers() {
     Serial.println("Failed to add Green");
     return;
   }
-  // memcpy(peerInfo.peer_addr, yellow, 6);
-  // if (esp_now_add_peer(&peerInfo) != ESP_OK){
-  //   Serial.println("Failed to add Yellow");
-  //   return;
-  // }
+  memcpy(peerInfo.peer_addr, yellow, 6);
+  if (esp_now_add_peer(&peerInfo) != ESP_OK){
+    Serial.println("Failed to add Yellow");
+    return;
+  }
   memcpy(peerInfo.peer_addr, red, 6);
   if (esp_now_add_peer(&peerInfo) != ESP_OK){
     Serial.println("Failed to add Red");
     return;
   }
-  memcpy(peerInfo.peer_addr, white2, 6);
-  if (esp_now_add_peer(&peerInfo) != ESP_OK){
-    Serial.println("Failed to add White1");
-    return;
-  }
+  // memcpy(peerInfo.peer_addr, white2, 6);
+  // if (esp_now_add_peer(&peerInfo) != ESP_OK){
+  //   Serial.println("Failed to add White1");
+  //   return;
+  // }
   memcpy(peerInfo.peer_addr, white1, 6);
   if (esp_now_add_peer(&peerInfo) != ESP_OK){
     Serial.println("Failed to add White2");
@@ -225,6 +131,7 @@ void registerPeers() {
   memcpy(peerInfo.peer_addr, fake, 6);
   if (esp_now_add_peer(&peerInfo) != ESP_OK){
     Serial.println("Failed to add fake");
+    return;
   }
 }
 
@@ -242,55 +149,9 @@ void sendMessage(char message) {
   delay(10);
   esp_now_send(white1, (uint8_t*) &outData, sizeof(outData));
   delay(10);
-  esp_now_send(white2, (uint8_t*) &outData, sizeof(outData));
+  esp_now_send(yellow, (uint8_t*) &outData, sizeof(outData));
   delay(10);
   esp_now_send(fake, (uint8_t*) &outData, sizeof(outData));
-}
-
-void handleRoot () {
-  server.send(200, "text/html", index_html);
-}
-
-void handleUnlockPress () {
-  Serial.println("Unlock!");
-  sendMessage('u');
-  buttonLocked = false;
-  someonePressed = false;
-  winnerColor = "";
-  digitalWrite(ledPin, HIGH);
-  server.send(200, "text/plain", "Button press received");
-}
-
-void handleResetPress() {
-  Serial.println("Reset!");
-  sendMessage('r');
-  someonePressed = false;
-  buttonLocked = true;
-  winnerColor = "";
-  digitalWrite(ledPin, LOW);
-  server.send(200, "text/plain", "Button press received");
-}
-
-void handleWinner() {
-  if (winnerColor != "") {
-    server.send(200, "text/plain", winnerColor);
-  } else {
-    server.send(200, "text/plain", "None");
-  }
-}
-
-void startWiFi() {
-  WiFi.softAP(ssid, password);
-  Serial.println(WiFi.localIP());
-}
-
-void startServer() {
-  server.on("/", handleRoot);
-  server.on("/unlock-press", handleUnlockPress);
-  server.on("/reset-press", handleResetPress);
-  server.on("/winner", handleWinner);
-  server.begin();
-  Serial.println("Web server started.");
 }
 
 void startAudio() {
@@ -315,17 +176,14 @@ void setup() {
   pinMode(buttonPin, INPUT_PULLDOWN);
   pinMode(ledPin, OUTPUT);
 
-  WiFi.mode(WIFI_AP_STA);
-  startWiFi();
+  WiFi.mode(WIFI_STA);
   startESPNOW();
   registerPeers();
-  startServer();
   startAudio();
 }
 
 void loop() {
   audio.loop();
-  server.handleClient();
   
   currentButtonState = digitalRead(buttonPin);
 
@@ -333,12 +191,13 @@ void loop() {
     if (prevButtonState == LOW && currentButtonState == HIGH) { // First one to press
       digitalWrite(ledPin, HIGH); // Lights on
       playAudio(); // Buzzer noise
-      winnerColor = "Yellow"; // Set winner as this device
+      someonePressed = true; // Mark that someone pressed
+      buttonLocked = true; // Lock this button too
       sendMessage('l');
     }
   }
 
-  prevButtonState = digitalRead(buttonPin);
+  prevButtonState = currentButtonState;
 }
 
 // Resets audio file

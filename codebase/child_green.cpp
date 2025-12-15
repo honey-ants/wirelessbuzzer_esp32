@@ -1,4 +1,4 @@
-// SLAVE BUZZER (GREEN)
+// CHILD BUZZER (GREEN)
 
 /*
 ESP32 Connections
